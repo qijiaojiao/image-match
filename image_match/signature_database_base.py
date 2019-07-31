@@ -6,24 +6,18 @@ import numpy as np
 
 class SignatureDatabaseBase(object):
     """Base class for storing and searching image signatures in a database
-
     Note:
         You must implement the methods search_single_record and insert_single_record
         in a derived class
-
     """
 
     def search_single_record(self, rec, pre_filter=None):
         """Search for a matching image record.
-
         Must be implemented by derived class.
-
         Args:
             rec (dict): an image record. Will be in the format returned by
                 make_record
-
                 For example, rec could have the form:
-
                 {'path': 'https://pixabay.com/static/uploads/photo/2012/11/28/08/56/mona-lisa-67506_960_720.jpg',
                  'signature': [0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 2, 2, 2, 2, 0 ... ]
                  'simple_word_0': 42252475,
@@ -45,20 +39,14 @@ class SignatureDatabaseBase(object):
                  ...
                  'metadata': {'category': 'art'},
                  }
-
                  The number of simple words corresponds to the attribute N
-
             pre_filter (dict): a filter to be applied by the concrete implementation
                    before applying the matching strategy
-
                 For example:
                     { "term": {  "metadata.category": "art" } }
-
         Returns:
             a formatted list of dicts representing matches.
-
             For example, if three matches are found:
-
             [
              {'dist': 0.069116439263706961,
               'id': u'AVM37oZq0osmmAxpPvx7',
@@ -71,24 +59,18 @@ class SignatureDatabaseBase(object):
               'metadata': {...},
               'path': u'https://c2.staticflickr.com/8/7158/6814444991_08d82de57e_z.jpg'}
             ]
-
             You can return any fields you like, but must include at least dist and id. Duplicate entries are ok,
             and they do not need to be sorted
-
         """
         raise NotImplementedError
 
     def insert_single_record(self, rec):
         """Insert an image record.
-
         Must be implemented by derived class.
-
         Args:
             rec (dict): an image record. Will be in the format returned by
                 make_record
-
                 For example, rec could have the form:
-
                 {'path': 'https://pixabay.com/static/uploads/photo/2012/11/28/08/56/mona-lisa-67506_960_720.jpg',
                  'signature': [0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 2, 2, 2, 2, 0 ... ]
                  'simple_word_0': 42252475,
@@ -110,9 +92,7 @@ class SignatureDatabaseBase(object):
                  ...
                  'metadata': {...}
                  }
-
                  The number of simple words corresponds to the attribute N
-
         """
         raise NotImplementedError
 
@@ -120,36 +100,29 @@ class SignatureDatabaseBase(object):
                  crop_percentile=(5, 95), distance_cutoff=0.45,
                  *signature_args, **signature_kwargs):
         """Set up storage scheme for images
-
         Central to the speed of this approach is the transforming the image
         signature into something that can be speedily indexed and matched.
         In our case, that means splitting the image signature into N words
         of length k, then encoding those words as integers. The idea here is
         that integer indices are more efficient than array indices.
-
         For example, say your image signature is [0, 1, 2, 0, -1, -2, 0, 1] and
         k=3 and N=4. That means we want 4 words of length 3.  For this signa-
         ture, that gives us:
-
         [0, 1, 2]
         [2, 0, -1]
         [-1, -2, 0]
         [0, 1]
-
         Note that signature elements can be repeated, and any mismatch in length
         is chopped off in the last word (which will be padded with zeros). Since
         these numbers run from -2..2, there 5 possibilites.  Adding 2 to each word
         makes them strictly non-negative, then the quantity, and transforming to
         base-5 makes unique integers. For the first word:
-
         [0, 1, 2] + 2 = [2, 3, 4]
         [5**0, 5**1, 5**2] = [1, 5, 25]
         dot([2, 3, 4], [1, 5, 25]) = 2 + 15 + 100 = 117
-
         So the integer word is 117.  Storing all the integer words as different
         database columns or fields gives us the speedy lookup. In practice, word
         arrays are 'squeezed' to between -1..1 before encoding.
-
         Args:
             k (Optional[int]): the width of a word (default 16)
             N (Optional[int]): the number of words (default 63)
@@ -161,7 +134,6 @@ class SignatureDatabaseBase(object):
                 be considered a match (default 0.45)
             *signature_args: Variable length argument list to pass to ImageSignature
             **signature_kwargs: Arbitrary keyword arguments to pass to ImageSignature
-
         """
         # Check integer inputs
         if type(k) is not int:
@@ -189,7 +161,6 @@ class SignatureDatabaseBase(object):
 
     def add_image(self, path, img=None, bytestream=False, metadata=None, refresh_after=False):
         """Add a single image to the database
-
         Args:
             path (string): path or identifier for image. If img=None, then path is assumed to be
                 a URL or filesystem path
@@ -203,14 +174,12 @@ class SignatureDatabaseBase(object):
                 is as described in the explanation for the img argument
                 (default False)
             metadata (Optional): any other information you want to include, can be nested (default None)
-
         """
         rec = make_record(path, self.gis, self.k, self.N, img=img, bytestream=bytestream, metadata=metadata)
         self.insert_single_record(rec, refresh_after=refresh_after)
 
     def search_image(self, path, all_orientations=False, bytestream=False, pre_filter=None):
         """Search for matches
-
         Args:
             path (string): path or image data. If bytestream=False, then path is assumed to be
                 a URL or filesystem path. Otherwise, it's assumed to be raw image data
@@ -223,9 +192,7 @@ class SignatureDatabaseBase(object):
                 (default None)
         Returns:
             a formatted list of dicts representing unique matches, sorted by dist
-
             For example, if three matches are found:
-
             [
              {'dist': 0.069116439263706961,
               'id': u'AVM37oZq0osmmAxpPvx7',
@@ -237,7 +204,6 @@ class SignatureDatabaseBase(object):
               'id': u'AVM37p530osmmAxpPvx9',
               'path': u'https://c2.staticflickr.com/8/7158/6814444991_08d82de57e_z.jpg'}
             ]
-
         """
         img = self.gis.preprocess_image(path, bytestream)
 
@@ -286,14 +252,12 @@ class SignatureDatabaseBase(object):
         return r
 
 
-def make_record(path, gis, k, N, img=None, bytestream=False, metadata=None):
+def make_record(path, gis, k, N, img=None, bytestream=False, metadata=None, flat=False, flatint=False):
     """Makes a record suitable for database insertion.
-
     Note:
         This non-class version of make_record is provided for
         CPU pooling. Functions passed to worker processes must
         be picklable.
-
     Args:
         path (string): path or image data. If bytestream=False, then path is assumed to be
             a URL or filesystem path. Otherwise, it's assumed to be raw image data
@@ -311,12 +275,14 @@ def make_record(path, gis, k, N, img=None, bytestream=False, metadata=None):
             is as described in the explanation for the img argument
             (default False)
         metadata (Optional): any other information you want to include, can be nested (default None)
-
+        flat (Optional): by default, words are stored in separate properties from simple_word_0 to
+            simple_word_N (N given as a parameter). When flat is set to True, all the word are stored
+            into one single 'simple_words' property, as a string, space separated.
+        flatint (Optional): only if flat is True. Will store words as an array of integers instead of
+            a long string space separated.
     Returns:
         An image record.
-
-        For example:
-
+        For example, when flat is set to False (default):
         {'path': 'https://pixabay.com/static/uploads/photo/2012/11/28/08/56/mona-lisa-67506_960_720.jpg',
          'signature': [0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 2, 2, 2, 2, 0 ... ]
          'simple_word_0': 42252475,
@@ -338,7 +304,20 @@ def make_record(path, gis, k, N, img=None, bytestream=False, metadata=None):
          ...
          'metadata': {...}
          }
-
+        Or when flat is set to True:
+        {'path': 'https://pixabay.com/static/uploads/photo/2012/11/28/08/56/mona-lisa-67506_960_720.jpg',
+         'signature': [0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 2, 2, 2, 2, 0 ... ]
+         'simple_words': "42252475 23885671 9967839 4257902 28651959 33773597 39331441 39327300 11337345 9571961
+                          28697868 14834907 7434746 37985525 10753207 9566120 ..."
+         'metadata': {...}
+         }
+         Or when flat is set to True with flatint also set to True:
+         {'path': 'https://pixabay.com/static/uploads/photo/2012/11/28/08/56/mona-lisa-67506_960_720.jpg',
+         'signature': [0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 2, 2, 2, 2, 0 ... ]
+         'simple_words': [42252475, 23885671, 9967839, 4257902, 28651959, 33773597, 39331441, 39327300, 11337345,
+                          9571961, 28697868, 14834907, 7434746, 37985525, 10753207, 9566120, ...]
+         'metadata': {...}
+         }
     """
     record = dict()
     record['path'] = path
@@ -357,34 +336,35 @@ def make_record(path, gis, k, N, img=None, bytestream=False, metadata=None):
 
     words = words_to_int(words)
 
-    for i in range(N):
-        record[''.join(['simple_word_', str(i)])] = words[i].tolist()
+    if flat:
+        if flatint:
+            record['simple_words'] = words.tolist()
+        else:
+            for i in range(N):
+                record['simple_words'] = " ".join(map(str, words.tolist()))
+    else:
+        for i in range(N):
+            record[''.join(['simple_word_', str(i)])] = words[i].tolist()
 
     return record
 
 
 def get_words(array, k, N):
     """Gets N words of length k from an array.
-
     Words may overlap.
-
     For example, say your image signature is [0, 1, 2, 0, -1, -2, 0, 1] and
     k=3 and N=4. That means we want 4 words of length 3.  For this signature,
     that gives us:
-
     [0, 1, 2]
     [2, 0, -1]
     [-1, -2, 0]
     [0, 1]
-
     Args:
         array (numpy.ndarray): array to split into words
         k (int): word length
         N (int): number of words
-
     Returns:
         an array with N rows of length k
-
     """
     # generate starting positions of each word
     word_positions = np.linspace(0, array.shape[0],
@@ -412,23 +392,17 @@ def get_words(array, k, N):
 
 def words_to_int(word_array):
     """Converts a simplified word to an integer
-
     Encodes a k-byte word to int (as those returned by max_contrast).
     First digit is least significant.
-
     Returns dot(word + 1, [1, 3, 9, 27 ...] ) for each word in word_array
-
     e.g.:
     [ -1, -1, -1] -> 0
     [ 0,   0,  0] -> 13
     [ 0,   1,  0] -> 16
-
     Args:
         word_array (numpy.ndarray): N x k array
-
     Returns:
         an array of integers of length N (the integer word encodings)
-
     """
     width = word_array.shape[1]
 
@@ -442,9 +416,7 @@ def words_to_int(word_array):
 
 def max_contrast(array):
     """Sets all positive values to one and all negative values to -1.
-
     Needed for first pass lookup on word table.
-
     Args:
         array (numpy.ndarray): target array
     """
@@ -456,15 +428,12 @@ def max_contrast(array):
 
 def normalized_distance(_target_array, _vec, nan_value=1.0):
     """Compute normalized distance to many points.
-
     Computes || vec - b || / ( ||vec|| + ||b||) for every b in target_array
-
     Args:
         _target_array (numpy.ndarray): N x m array
         _vec (numpy.ndarray): array of size m
         nan_value (Optional[float]): value to replace 0.0/0.0 = nan with
             (default 1.0, to take those featureless images out of contention)
-
     Returns:
         the normalized distance (float)
     """
