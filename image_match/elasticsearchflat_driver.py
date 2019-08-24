@@ -139,6 +139,11 @@ class SignatureES(SignatureDatabaseBase):
             for id_tag in matching_paths[1:]:
                 self.es.delete(index=self.index, doc_type=self.doc_type, id=id_tag)
 
+    def add_image_with_data_id(self, path, data_id, create_time, metadata=None):
+        rec = make_record(path, self.gis, self.k, self.N, metadata=metadata, flat=True, flatint=True,
+                          data_id=data_id, create_time=create_time)
+        self.insert_single_record(rec)
+
     def add_image(self, path, img=None, bytestream=False, metadata=None, refresh_after=False):
         """Add a single image to the database
 

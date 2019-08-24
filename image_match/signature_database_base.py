@@ -2,6 +2,7 @@ from image_match.goldberg import ImageSignature
 from itertools import product
 from operator import itemgetter
 import numpy as np
+import time
 
 
 class SignatureDatabaseBase(object):
@@ -159,6 +160,11 @@ class SignatureDatabaseBase(object):
 
         self.gis = ImageSignature(n=n_grid, crop_percentiles=crop_percentile, *signature_args, **signature_kwargs)
 
+    def add_image_with_data_id(self, path, data_id, create_time, metadata=None):
+        rec = make_record(path, self.gis, self.k, self.N, metadata=metadata, flat=True, flatint=True,
+                          data_id=data_id, create_time=create_time)
+        self.insert_single_record(rec)
+
     def add_image(self, path, img=None, bytestream=False, metadata=None, refresh_after=False):
         """Add a single image to the database
         Args:
@@ -252,7 +258,7 @@ class SignatureDatabaseBase(object):
         return r
 
 
-def make_record(path, gis, k, N, img=None, bytestream=False, metadata=None, flat=False, flatint=False):
+def make_record(path, gis, k, N, img=None, bytestream=False, metadata=None, flat=False, flatint=False, data_id=None, create_time=None):
     """Makes a record suitable for database insertion.
     Note:
         This non-class version of make_record is provided for
@@ -327,6 +333,10 @@ def make_record(path, gis, k, N, img=None, bytestream=False, metadata=None, flat
         signature = gis.generate_signature(path)
 
     record['signature'] = signature.tolist()
+
+    record['create_time'] = create_time
+    if data_id is not None:
+        record['data_id'] = data_id
 
     if metadata:
         record['metadata'] = metadata
