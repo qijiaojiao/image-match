@@ -161,7 +161,7 @@ class SignatureDatabaseBase(object):
         self.gis = ImageSignature(n=n_grid, crop_percentiles=crop_percentile, *signature_args, **signature_kwargs)
 
     def add_image_with_data_id(self, path, data_id, create_time, metadata=None):
-        rec = make_record(path, self.gis, self.k, self.N, metadata=metadata, flat=True, flatint=True,
+        rec = make_record(path, self.gis, self.k, self.N, metadata=metadata, flat=True,
                           data_id=data_id, create_time=create_time)
         self.insert_single_record(rec)
 
