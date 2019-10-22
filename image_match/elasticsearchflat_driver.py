@@ -27,7 +27,7 @@ class SignatureES(SignatureDatabaseBase):
 
     """
 
-    def __init__(self, es, index='images', doc_type='image', timeout='10s', size=100, minimum_should_match=6,
+    def __init__(self, es, index='images', doc_type='image', timeout='10s', size=100,
                  *args, **kwargs):
         """Extra setup for Elasticsearch
 
@@ -62,34 +62,24 @@ class SignatureES(SignatureDatabaseBase):
         self.doc_type = doc_type
         self.timeout = timeout
         self.size = size
-        self.minimum_should_match = minimum_should_match
 
         super(SignatureES, self).__init__(*args, **kwargs)
 
-    def search_single_record(self, rec, pre_filter=None):
-        path = rec.pop('path')
+    def search_single_record(self, rec):
         signature = rec.pop('signature')
         if 'metadata' in rec:
             rec.pop('metadata')
 
         query = {
             'query': {
-                'bool': {
-                    'must': {
-                        'match': {
-                            'simple_words': {
-                                "query": rec["simple_words"],
-                                'minimum_should_match': str(self.minimum_should_match)
-                            }
-                        },
+                'match': {
+                    'simple_words': {
+                        "query": rec["simple_words"]
                     }
                 }
             },
-            '_source': {'excludes': ['simple_words']}
+            '_source': {'includes': ['signature', 'metadata']}
         }
-
-        if pre_filter is not None:
-            query['query']['bool']['filter'] = pre_filter
 
         # Perform minimum_should_match request
         res = self.es.search(index=self.index,
@@ -107,8 +97,7 @@ class SignatureES(SignatureDatabaseBase):
 
         formatted_res = [{'id': x['_id'],
                           'score': x['_score'],
-                          'metadata': x['_source'].get('metadata'),
-                          'path': x['_source'].get('url', x['_source'].get('path'))}
+                          'metadata': x['_source'].get('metadata')}
                          for x in res]
 
         for i, row in enumerate(formatted_res):
@@ -121,23 +110,6 @@ class SignatureES(SignatureDatabaseBase):
         rec['timestamp'] = datetime.now()
 
         self.es.index(index=self.index, doc_type=self.doc_type, body=rec, refresh=refresh_after)
-
-    def delete_duplicates(self, path):
-        """Delete all but one entries in elasticsearch whose `path` value is equivalent to that of path.
-        Args:
-            path (string): path value to compare to those in the elastic search
-        """
-        matching_paths = [item['_id'] for item in
-                          self.es.search(body={'query':
-                                               {'match':
-                                                {'path': path}
-                                               }
-                                              },
-                                         index=self.index)['hits']['hits']
-                          if item['_source']['path'] == path]
-        if len(matching_paths) > 0:
-            for id_tag in matching_paths[1:]:
-                self.es.delete(index=self.index, doc_type=self.doc_type, id=id_tag)
 
     def add_image_with_data_id(self, path, data_id, create_time, metadata=None):
         rec = make_record(path, self.gis, self.k, self.N, metadata=metadata,
@@ -167,7 +139,7 @@ class SignatureES(SignatureDatabaseBase):
         rec = make_record(path, self.gis, self.k, self.N, img=img, bytestream=bytestream, metadata=metadata, flat=True)
         self.insert_single_record(rec, refresh_after=refresh_after)
 
-    def search_image(self, path, all_orientations=False, bytestream=False, pre_filter=None):
+    def search_image(self, path, all_orientations=False, bytestream=False):
         """Search for matches
 
         Overwrite the base function to search by flat image (call to make_record with flat=True)
@@ -233,7 +205,7 @@ class SignatureES(SignatureDatabaseBase):
             # generate the signature
             transformed_record = make_record(transformed_img, self.gis, self.k, self.N, flat=True)
 
-            l = self.search_single_record(transformed_record, pre_filter=pre_filter)
+            l = self.search_single_record(transformed_record)
             result.extend(l)
 
         ids = set()

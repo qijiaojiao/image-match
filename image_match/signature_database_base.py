@@ -326,7 +326,7 @@ def make_record(path, gis, k, N, img=None, bytestream=False, metadata=None, flat
          }
     """
     record = dict()
-    record['path'] = path
+    # record['path'] = path
     if img is not None:
         signature = gis.generate_signature(img, bytestream=bytestream)
     else:
