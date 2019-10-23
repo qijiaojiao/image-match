@@ -95,7 +95,8 @@ class SignatureES(SignatureDatabaseBase):
 
         dists = normalized_distance(sigs, np.array(signature))
 
-        formatted_res = [{'score': x['_score'],
+        formatted_res = [{'id': x['_id'],
+                          'score': x['_score'],
                           'data_id': x['_source'].get('data_id'),
                           'metadata': x['_source'].get('metadata')}
                          for x in res]
@@ -212,8 +213,9 @@ class SignatureES(SignatureDatabaseBase):
         unique = []
         for item in result:
             if item['id'] not in ids:
-                unique.append(item)
                 ids.add(item['id'])
+                item.pop('id')
+                unique.append(item)
 
         r = sorted(unique, key=itemgetter('dist'))
         return r
