@@ -78,7 +78,7 @@ class SignatureES(SignatureDatabaseBase):
                     }
                 }
             },
-            '_source': {'includes': ['signature', 'metadata']}
+            '_source': {'includes': ['signature', 'data_id', 'metadata']}
         }
 
         # Perform minimum_should_match request
@@ -95,8 +95,8 @@ class SignatureES(SignatureDatabaseBase):
 
         dists = normalized_distance(sigs, np.array(signature))
 
-        formatted_res = [{'id': x['_id'],
-                          'score': x['_score'],
+        formatted_res = [{'score': x['_score'],
+                          'data_id': x['_source'].get('data_id'),
                           'metadata': x['_source'].get('metadata')}
                          for x in res]
 
