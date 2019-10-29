@@ -164,14 +164,6 @@ class SignatureDatabaseBase(object):
         rec = make_record(path, self.gis, self.k, self.N, metadata=metadata, flat=True,
                           data_id=data_id, create_time=create_time)
         self.insert_single_record(rec)
-        return list(map(int, str.split(rec['simple_words'], " ")))
-
-    def get_image_words(self, path, data_id, create_time,
-                               metadata=None):
-        rec = make_record(path, self.gis, self.k, self.N, metadata=metadata,
-                          flat=True,
-                          data_id=data_id, create_time=create_time)
-        return rec
 
     def add_image(self, path, img=None, bytestream=False, metadata=None, refresh_after=False):
         """Add a single image to the database
